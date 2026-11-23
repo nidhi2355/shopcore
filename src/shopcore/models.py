@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -6,13 +6,19 @@ class Product:
     sku: str
     name: str
     price: float
-    category: str = "general"
+    category: str = ""
 
 
 @dataclass
 class CartItem:
     product: Product
     quantity: int
+
+    def __post_init__(self) -> None:
+        if self.quantity <= 0:
+            raise ValueError("CartItem quantity must be positive")
+        if self.product.price < 0:
+            raise ValueError("Product price cannot be negative")
 
 
 @dataclass
@@ -24,4 +30,3 @@ class Order:
     tax: float
     total: float
     status: str = "confirmed"
-    metadata: dict = field(default_factory=dict)

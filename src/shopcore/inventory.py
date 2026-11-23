@@ -4,6 +4,11 @@ class OutOfStockError(Exception):
 
 class InventoryManager:
     def __init__(self, initial_stock: dict[str, int] | None = None):
+        # Validate that no initial stock quantity is negative
+        if initial_stock:
+            for sku, qty in initial_stock.items():
+                if qty < 0:
+                    raise ValueError(f"Initial stock for {sku} cannot be negative")
         self._stock: dict[str, int] = dict(initial_stock or {})
 
     def get_stock(self, sku: str) -> int:
