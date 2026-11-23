@@ -25,3 +25,20 @@ def test_create_order_insufficient_stock():
 
     with pytest.raises(OutOfStockError):
         service.create_order(items)
+
+
+def test_create_order_atomic_failure_multi_item():
+    # Setup inventory with enough stock for SKU1 but not for SKU2
+    inv = InventoryManager({"SKU1": 5, "SKU2": 1})
+    service = OrderService(inv)
+    items = [
+        CartItem(Product("SKU1", "Headphones", 2000.0), 2),
+        CartItem(Product("SKU2", "Speaker", 3000.0), 3),
+    ]
+
+    with pytest.raises(OutOfStockError):
+        service.create_order(items)
+
+    # Ensure no stock was deducted for either SKU
+    assert inv.get_stock("SKU1") == 5
+    assert inv.get_stock("SKU2") == 1
