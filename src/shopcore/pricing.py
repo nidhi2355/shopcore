@@ -25,7 +25,8 @@ def calculate_discount(subtotal: float, coupon_code: str | None) -> float:
     if discount_type == "percent":
         return round(subtotal * (value / 100.0), 2)
 
-    return round(value, 2)
+    # Flat discount – ensure it does not exceed the subtotal
+    return round(min(value, subtotal), 2)
 
 
 def calculate_tax(amount: float, tax_rate: float = DEFAULT_TAX_RATE) -> float:

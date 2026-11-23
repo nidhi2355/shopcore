@@ -20,7 +20,7 @@ class OrderService:
 
         subtotal = calculate_subtotal(items)
         discount = calculate_discount(subtotal, coupon_code)
-        taxable_amount = subtotal - discount
+        taxable_amount = max(subtotal - discount, 0.0)
         tax = calculate_tax(taxable_amount)
         total = round(taxable_amount + tax, 2)
 

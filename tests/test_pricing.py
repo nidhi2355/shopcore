@@ -22,3 +22,13 @@ def test_invalid_coupon_raises():
 
 def test_calculate_tax():
     assert calculate_tax(1000.0) == 180.0
+
+
+def test_flat_coupon_exceeds_subtotal():
+    # Discount should be capped at the subtotal
+    assert calculate_discount(300.0, "FLAT500") == 300.0
+
+
+def test_flat_coupon_normal():
+    # When subtotal exceeds flat discount, full discount applies
+    assert calculate_discount(800.0, "FLAT500") == 500.0
