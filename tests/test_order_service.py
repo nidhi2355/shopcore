@@ -60,3 +60,45 @@ def test_atomic_stock_reservation_on_failure():
     # Stock should be unchanged for both SKUs
     assert inv.get_stock("SKU1") == 5
     assert inv.get_stock("SKU2") == 1
+
+
+def test_create_order_duplicate_skus_exceed_stock():
+    """Duplicate line items for the same SKU should be aggregated for stock validation.
+    When total quantity exceeds available stock, an OutOfStockError is raised and stock remains unchanged.
+    """
+    inv = InventoryManager({"SKU1": 5})
+    service = OrderService(inv)
+    items = [
+        CartItem(Product("SKU1", "Keyboard", 1500.0), 3),
+        CartItem(Product("SKU1", "Keyboard", 1500.0), 3),
+    ]
+
+    with pytest.raises(OutOfStockError):
+        service.create_order(items)
+
+    assert inv.get_stock("SKU1") == 5
+
+
+def test_create_order_duplicate_skus_within_stock():
+    """Duplicate line items that together fit within stock should succeed.
+    Stock should be correctly decremented by the total quantity.
+    """
+    inv = InventoryManager({"SKU1": 6})
+    service = OrderService(inv)
+    items = [
+        CartItem(Product("SKU1", "Keyboard", 1500.0), 3),
+        CartItem(Product("SKU1", "Keyboard", 1500.0), 3),
+    ]
+
+    order = service.create_order(items)
+
+    # Subtotal = 6 * 1500 = 9000
+    assert order.subtotal == 9000.0
+    # No discount applied
+    assert order.discount == 0.0
+    # Tax rate is 18% (as inferred from other tests)
+    assert order.tax == 1620.0
+    # Total = subtotal + tax
+    assert order.total == 10620.0
+    # Stock should be fully depleted
+    assert inv.get_stock("SKU1") == 0

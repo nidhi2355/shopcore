@@ -15,12 +15,18 @@ class OrderService:
         if not items:
             raise ValueError("Cannot create an order with an empty cart")
 
-        # Reserve stock for each item, tracking successful reservations
+        # Aggregate quantities per SKU to ensure total requested quantity does not exceed stock
+        aggregated: dict[str, int] = {}
+        for item in items:
+            sku = item.product.sku
+            aggregated[sku] = aggregated.get(sku, 0) + item.quantity
+
+        # Reserve stock for each aggregated SKU, tracking successful reservations
         reserved_items: list[tuple[str, int]] = []
         try:
-            for item in items:
-                self.inventory.reserve_stock(item.product.sku, item.quantity)
-                reserved_items.append((item.product.sku, item.quantity))
+            for sku, total_qty in aggregated.items():
+                self.inventory.reserve_stock(sku, total_qty)
+                reserved_items.append((sku, total_qty))
         except OutOfStockError:
             # Roll back any stock that was already reserved before re‑raising
             for sku, qty in reserved_items:
