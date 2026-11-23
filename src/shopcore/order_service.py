@@ -56,6 +56,8 @@ class OrderService:
                 tax=tax,
                 total=total,
             )
+            # Default status for a newly created order
+            order.status = "confirmed"
             self._orders[order.order_id] = order
             return order
         except Exception:
@@ -63,4 +65,43 @@ class OrderService:
             for sku, qty in reserved_items:
                 self.inventory.add_stock(sku, qty)
             raise
-        
+
+    def cancel_order(self, order_id: str) -> None:
+        """Cancel an existing order.
+
+        Restores the reserved stock and marks the order as cancelled.
+        """
+        order = self._orders.get(order_id)
+        if order is None:
+            raise ValueError(f"Order with id {order_id} does not exist")
+        if getattr(order, "status", None) == "cancelled":
+            raise ValueError(f"Order {order_id} is already cancelled")
+
+        # Restore stock for each item in the order
+        for item in order.items:
+            self.inventory.add_stock(item.product.sku, item.quantity)
+        # Mark the order as cancelled
+        order.status = "cancelled"
+
+    def list_orders(self, status: str | None = None) -> list[Order]:
+        """Return all orders or only those matching the given status.
+
+        If *status* is ``None`` the full list of orders is returned.
+        Otherwise only orders whose ``status`` attribute equals the supplied
+        value are returned.
+        """
+        if status is None:
+            return list(self._orders.values())
+        return [order for order in self._orders.values() if getattr(order, "status", None) == status]
+
+    def get_total_revenue(self) -> float:
+        """Calculate net revenue from non‑cancelled orders.
+
+        The revenue is the sum of ``order.total`` for every order whose
+        ``status`` is not ``"cancelled"``. The result is rounded to two decimal
+        places.
+        """
+        revenue = sum(
+            order.total for order in self._orders.values() if getattr(order, "status", None) != "cancelled"
+        )
+        return round(revenue, 2)
