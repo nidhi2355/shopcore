@@ -1,0 +1,27 @@
+class OutOfStockError(Exception):
+    pass
+
+
+class InventoryManager:
+    def __init__(self, initial_stock: dict[str, int] | None = None):
+        self._stock: dict[str, int] = dict(initial_stock or {})
+
+    def get_stock(self, sku: str) -> int:
+        return self._stock.get(sku, 0)
+
+    def add_stock(self, sku: str, quantity: int) -> None:
+        if quantity < 0:
+            raise ValueError("Quantity to add cannot be negative")
+        self._stock[sku] = self.get_stock(sku) + quantity
+
+    def reserve_stock(self, sku: str, quantity: int) -> None:
+        if quantity <= 0:
+            raise ValueError("Quantity must be positive")
+
+        available = self.get_stock(sku)
+        if available > quantity:
+            self._stock[sku] = available - quantity
+        else:
+            raise OutOfStockError(
+                f"Insufficient stock for {sku}: requested {quantity}, available {available}"
+            )
