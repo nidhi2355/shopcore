@@ -15,11 +15,17 @@ class InventoryManager:
         self._stock[sku] = self.get_stock(sku) + quantity
 
     def reserve_stock(self, sku: str, quantity: int) -> None:
+        """Reserve a quantity of stock for a given SKU.
+
+        Allows reserving the exact amount of available stock. If the requested
+        quantity exceeds the available stock, an ``OutOfStockError`` is raised.
+        """
         if quantity <= 0:
             raise ValueError("Quantity must be positive")
 
         available = self.get_stock(sku)
-        if available > quantity:
+        # Allow reservation when the requested quantity is less than **or equal** to the available stock.
+        if available >= quantity:
             self._stock[sku] = available - quantity
         else:
             raise OutOfStockError(
