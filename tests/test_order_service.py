@@ -39,3 +39,24 @@ def test_create_order_flat_coupon_exceeds_subtotal():
     assert order.tax == 0.0
     assert order.total == 0.0
     assert inv.get_stock("SKU1") == 4
+
+
+def test_atomic_stock_reservation_on_failure():
+    """Ensure that stock is not deducted when an order fails due to insufficient stock.
+
+    The first item can be reserved, but the second triggers an OutOfStockError.
+    After the exception, inventory levels should remain unchanged.
+    """
+    inv = InventoryManager({"SKU1": 5, "SKU2": 1})
+    service = OrderService(inv)
+    items = [
+        CartItem(Product("SKU1", "Keyboard", 1500.0), 2),
+        CartItem(Product("SKU2", "Mouse", 500.0), 3),
+    ]
+
+    with pytest.raises(OutOfStockError):
+        service.create_order(items)
+
+    # Stock should be unchanged for both SKUs
+    assert inv.get_stock("SKU1") == 5
+    assert inv.get_stock("SKU2") == 1
