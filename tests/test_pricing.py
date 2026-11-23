@@ -1,6 +1,12 @@
 import pytest
 from shopcore.models import CartItem, Product
-from shopcore.pricing import calculate_discount, calculate_subtotal, calculate_tax
+from shopcore.pricing import (
+    calculate_discount,
+    calculate_subtotal,
+    calculate_tax,
+    calculate_taxable_subtotal,
+    TAX_EXEMPT_CATEGORIES,
+)
 
 
 def test_calculate_subtotal():
@@ -32,3 +38,24 @@ def test_flat_coupon_exceeds_subtotal():
 def test_flat_coupon_normal():
     # When subtotal exceeds flat discount, full discount applies
     assert calculate_discount(800.0, "FLAT500") == 500.0
+
+
+def test_taxable_subtotal_exempt_items():
+    # All items belong to exempt categories – taxable subtotal should be 0
+    p1 = Product("SKU1", "Apple", 100.0)
+    p1.category = "groceries"
+    p2 = Product("SKU2", "Novel", 200.0)
+    p2.category = "books"
+    items = [CartItem(p1, 3), CartItem(p2, 2)]
+    assert calculate_taxable_subtotal(items) == 0.0
+
+
+def test_taxable_subtotal_mixed_items():
+    # Mix of exempt and taxable items
+    p1 = Product("SKU1", "Apple", 100.0)
+    p1.category = "groceries"
+    p2 = Product("SKU2", "Headphones", 1500.0)
+    # No category set -> treated as taxable
+    items = [CartItem(p1, 2), CartItem(p2, 1)]
+    # Only the headphones contribute to taxable subtotal
+    assert calculate_taxable_subtotal(items) == 1500.0

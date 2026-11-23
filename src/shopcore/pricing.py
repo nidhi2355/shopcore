@@ -2,6 +2,9 @@ from .models import CartItem
 
 DEFAULT_TAX_RATE = 0.18
 
+# Categories that are exempt from GST tax
+TAX_EXEMPT_CATEGORIES = {"groceries", "books"}
+
 COUPONS = {
     "SAVE10": ("percent", 10.0),
     "SAVE25": ("percent", 25.0),
@@ -10,7 +13,23 @@ COUPONS = {
 
 
 def calculate_subtotal(items: list[CartItem]) -> float:
+    """Calculate the total price for all items before discounts and tax."""
     return round(sum(item.product.price * item.quantity for item in items), 2)
+
+
+def calculate_taxable_subtotal(items: list[CartItem]) -> float:
+    """Calculate the subtotal that is subject to GST.
+
+    Items whose product category is in ``TAX_EXEMPT_CATEGORIES`` are ignored.
+    If a product does not have a ``category`` attribute, it is treated as
+    taxable (i.e., falls back to the default behaviour).
+    """
+    taxable_sum = 0.0
+    for item in items:
+        category = getattr(item.product, "category", None)
+        if category is None or category not in TAX_EXEMPT_CATEGORIES:
+            taxable_sum += item.product.price * item.quantity
+    return round(taxable_sum, 2)
 
 
 def calculate_discount(subtotal: float, coupon_code: str | None) -> float:
