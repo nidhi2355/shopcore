@@ -25,3 +25,17 @@ def test_create_order_insufficient_stock():
 
     with pytest.raises(OutOfStockError):
         service.create_order(items)
+
+
+def test_create_order_flat_coupon_exceeds_subtotal():
+    inv = InventoryManager({"SKU1": 5})
+    service = OrderService(inv)
+    items = [CartItem(Product("SKU1", "Item", 300.0), 1)]
+
+    order = service.create_order(items, coupon_code="FLAT500")
+
+    assert order.subtotal == 300.0
+    assert order.discount == 300.0
+    assert order.tax == 0.0
+    assert order.total == 0.0
+    assert inv.get_stock("SKU1") == 4
