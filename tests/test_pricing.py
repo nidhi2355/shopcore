@@ -59,3 +59,26 @@ def test_taxable_subtotal_mixed_items():
     items = [CartItem(p1, 2), CartItem(p2, 1)]
     # Only the headphones contribute to taxable subtotal
     assert calculate_taxable_subtotal(items) == 1500.0
+
+
+def test_tax_exempt_items_tax_zero():
+    p1 = Product("SKU1", "Apple", 100.0)
+    p1.category = "groceries"
+    p2 = Product("SKU2", "Novel", 200.0)
+    p2.category = "books"
+    items = [CartItem(p1, 1), CartItem(p2, 1)]
+    assert calculate_taxable_subtotal(items) == 0.0
+    assert calculate_tax(calculate_taxable_subtotal(items)) == 0.0
+
+
+def test_mixed_cart_taxable_subtotal_and_discount():
+    p1 = Product("SKU1", "Apple", 100.0)
+    p1.category = "groceries"
+    p2 = Product("SKU2", "Headphones", 1500.0)
+    items = [CartItem(p1, 2), CartItem(p2, 1)]
+    subtotal = calculate_subtotal(items)
+    discount = calculate_discount(subtotal, "SAVE10")
+    taxable_subtotal = calculate_taxable_subtotal(items)
+    taxable_amount = max(taxable_subtotal - discount, 0.0)
+    expected_tax = calculate_tax(taxable_amount)
+    assert calculate_tax(taxable_amount) == expected_tax

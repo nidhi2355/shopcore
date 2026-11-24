@@ -2,6 +2,7 @@ import pytest
 from shopcore.inventory import InventoryManager
 from shopcore.models import CartItem, Product
 from shopcore.order_service import OrderService
+from shopcore.pricing import calculate_subtotal, calculate_discount, calculate_taxable_subtotal, calculate_tax
 
 
 def test_order_listing_and_revenue():
@@ -36,3 +37,32 @@ def test_order_listing_and_revenue():
     confirmed = service.list_orders(status="confirmed")
     assert len(confirmed) == 1
     assert confirmed[0].order_id
+
+
+def test_order_tax_exempt_items():
+    inventory = InventoryManager({"SKU1": 10})
+    service = OrderService(inventory)
+    p = Product("SKU1", "Apple", 100.0)
+    p.category = "groceries"
+    item = CartItem(p, 3)
+    order = service.create_order([item])
+    assert order.tax == 0.0
+    assert order.total == round((order.subtotal - order.discount) + order.tax, 2)
+
+
+def test_order_mixed_cart_tax_with_discount():
+    inventory = InventoryManager({"SKU1": 10, "SKU2": 5})
+    service = OrderService(inventory)
+    p1 = Product("SKU1", "Apple", 100.0)
+    p1.category = "groceries"
+    p2 = Product("SKU2", "Headphones", 1500.0)
+    items = [CartItem(p1, 2), CartItem(p2, 1)]
+    order = service.create_order(items, coupon_code="SAVE10")
+    subtotal = calculate_subtotal(items)
+    discount = calculate_discount(subtotal, "SAVE10")
+    taxable_subtotal = calculate_taxable_subtotal(items)
+    taxable_amount = max(taxable_subtotal - discount, 0.0)
+    expected_tax = calculate_tax(taxable_amount)
+    expected_total = round((subtotal - discount) + expected_tax, 2)
+    assert order.tax == expected_tax
+    assert order.total == expected_total

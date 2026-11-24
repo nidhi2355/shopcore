@@ -46,7 +46,8 @@ class OrderService:
             taxable_subtotal = calculate_taxable_subtotal(items)
             taxable_amount = max(taxable_subtotal - discount, 0.0)
             tax = calculate_tax(taxable_amount)
-            total = round(taxable_amount + tax, 2)
+            # Total includes discounted subtotal plus tax
+            total = round((subtotal - discount) + tax, 2)
 
             order = Order(
                 order_id=str(uuid.uuid4())[:8],
