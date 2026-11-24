@@ -14,6 +14,12 @@ class CartItem:
     product: Product
     quantity: int
 
+    def __post_init__(self):
+        if self.quantity <= 0:
+            raise ValueError("CartItem quantity must be positive")
+        if self.product.price < 0:
+            raise ValueError("Product price cannot be negative")
+
 
 @dataclass
 class Order:
