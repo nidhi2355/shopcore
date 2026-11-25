@@ -102,3 +102,25 @@ def test_mixed_cart_with_discount():
     assert order.discount == expected_discount
     assert order.tax == expected_tax
     assert order.total == expected_total
+
+
+def test_order_creation_coupon_failure_rolls_back_stock():
+    inventory = InventoryManager({"SKU1": 5})
+    service = OrderService(inventory)
+    product = Product("SKU1", "Widget", 100.0)
+    item = CartItem(product, 2)  # subtotal 200.0
+    with pytest.raises(ValueError):
+        service.create_order([item], coupon_code="EXPIRED10")
+    # Stock should remain unchanged after failure
+    assert inventory.stock["SKU1"] == 5
+
+
+def test_order_creation_coupon_min_subtotal_failure_rolls_back_stock():
+    inventory = InventoryManager({"SKU1": 5})
+    service = OrderService(inventory)
+    product = Product("SKU1", "Widget", 500.0)
+    item = CartItem(product, 3)  # subtotal 1500.0, below SAVE25 min_subtotal
+    with pytest.raises(ValueError):
+        service.create_order([item], coupon_code="SAVE25")
+    # Stock should remain unchanged after failure
+    assert inventory.stock["SKU1"] == 5

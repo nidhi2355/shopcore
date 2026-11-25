@@ -60,3 +60,12 @@ class InventoryManager:
         if sku is None:
             return list(self._history)
         return [entry for entry in self._history if entry["sku"] == sku]
+
+
+    @property
+    def stock(self) -> dict[str, int]:
+        """Public view of current stock levels.
+
+        Returns the internal stock dictionary used by the manager.
+        """
+        return self._stock
