@@ -6,9 +6,10 @@ DEFAULT_TAX_RATE = 0.18
 TAX_EXEMPT_CATEGORIES = {"groceries", "books"}
 
 COUPONS = {
-    "SAVE10": ("percent", 10.0),
-    "SAVE25": ("percent", 25.0),
-    "FLAT500": ("flat", 500.0),
+    "SAVE10": {"type": "percent", "value": 10.0, "min_subtotal": 0.0, "active": True},
+    "SAVE25": {"type": "percent", "value": 25.0, "min_subtotal": 2000.0, "active": True},
+    "FLAT500": {"type": "flat", "value": 500.0, "min_subtotal": 0.0, "active": True},
+    "EXPIRED10": {"type": "percent", "value": 10.0, "min_subtotal": 0.0, "active": False},
 }
 
 
@@ -40,7 +41,16 @@ def calculate_discount(subtotal: float, coupon_code: str | None) -> float:
     if code not in COUPONS:
         raise ValueError(f"Invalid coupon code: {coupon_code}")
 
-    discount_type, value = COUPONS[code]
+    coupon = COUPONS[code]
+    if not coupon["active"]:
+        raise ValueError(f"Coupon {code} is inactive")
+    if subtotal < coupon["min_subtotal"]:
+        raise ValueError(
+            f"Subtotal {subtotal} does not meet minimum {coupon['min_subtotal']} for coupon {code}"
+        )
+
+    discount_type = coupon["type"]
+    value = coupon["value"]
     if discount_type == "percent":
         return round(subtotal * (value / 100.0), 2)
 

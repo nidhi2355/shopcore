@@ -59,3 +59,31 @@ def test_taxable_subtotal_mixed_items():
     items = [CartItem(p1, 2), CartItem(p2, 1)]
     # Only the headphones contribute to taxable subtotal
     assert calculate_taxable_subtotal(items) == 1500.0
+
+
+def test_save25_min_subtotal_success():
+    assert calculate_discount(2000.0, "SAVE25") == 500.0
+
+
+def test_save25_min_subtotal_failure():
+    with pytest.raises(ValueError):
+        calculate_discount(1999.99, "SAVE25")
+
+
+def test_expired_coupon_raises():
+    with pytest.raises(ValueError):
+        calculate_discount(1000.0, "EXPIRED10")
+
+
+def test_save25_min_subtotal_success():
+    assert calculate_discount(2000.0, "SAVE25") == 500.0
+
+
+def test_save25_min_subtotal_failure():
+    with pytest.raises(ValueError):
+        calculate_discount(1999.99, "SAVE25")
+
+
+def test_expired_coupon_raises():
+    with pytest.raises(ValueError):
+        calculate_discount(1000.0, "EXPIRED10")
