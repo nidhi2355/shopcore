@@ -36,3 +36,69 @@ def test_order_listing_and_revenue():
     confirmed = service.list_orders(status="confirmed")
     assert len(confirmed) == 1
     assert confirmed[0].order_id
+
+
+def test_tax_exempt_only():
+    """All items are in tax‑exempt categories; tax should be 0.0."""
+    inventory = InventoryManager({"SKU1": 10, "SKU2": 10})
+    service = OrderService(inventory)
+
+    prod_groceries = Product("SKU1", "Apple", 100.0)
+    prod_groceries.category = "groceries"
+    prod_books = Product("SKU2", "Novel", 200.0)
+    prod_books.category = "books"
+
+    items = [CartItem(prod_groceries, 3), CartItem(prod_books, 2)]
+    order = service.create_order(items)
+    assert order.tax == 0.0
+    # Total should equal subtotal since no tax and no discount
+    assert order.total == order.subtotal
+
+
+def test_mixed_cart_tax():
+    """Cart with both exempt and taxable items; tax applied only to taxable portion."""
+    inventory = InventoryManager({"SKU1": 5, "SKU2": 5})
+    service = OrderService(inventory)
+
+    prod_groceries = Product("SKU1", "Apple", 100.0)
+    prod_groceries.category = "groceries"
+    prod_headphones = Product("SKU2", "Headphones", 1500.0)  # default category "general"
+
+    items = [CartItem(prod_groceries, 2), CartItem(prod_headphones, 1)]
+    order = service.create_order(items)
+
+    # Expected calculations
+    expected_subtotal = 2 * 100.0 + 1 * 1500.0
+    expected_taxable = 1500.0  # only headphones
+    expected_tax = round(expected_taxable * 0.18, 2)
+    expected_total = round(expected_subtotal + expected_tax, 2)  # no discount
+
+    assert order.subtotal == expected_subtotal
+    assert order.tax == expected_tax
+    assert order.total == expected_total
+
+
+def test_mixed_cart_with_discount():
+    """Mixed cart with a percent coupon; tax calculated after discount on taxable amount."""
+    inventory = InventoryManager({"SKU1": 5, "SKU2": 5})
+    service = OrderService(inventory)
+
+    prod_groceries = Product("SKU1", "Apple", 100.0)
+    prod_groceries.category = "groceries"
+    prod_headphones = Product("SKU2", "Headphones", 1500.0)
+
+    items = [CartItem(prod_groceries, 2), CartItem(prod_headphones, 1)]
+    # Apply 10% discount on subtotal
+    order = service.create_order(items, coupon_code="SAVE10")
+
+    expected_subtotal = 2 * 100.0 + 1 * 1500.0
+    expected_discount = round(expected_subtotal * 0.10, 2)
+    expected_taxable = 1500.0
+    taxable_after_discount = max(expected_taxable - expected_discount, 0.0)
+    expected_tax = round(taxable_after_discount * 0.18, 2)
+    expected_total = round(expected_subtotal - expected_discount + expected_tax, 2)
+
+    assert order.subtotal == expected_subtotal
+    assert order.discount == expected_discount
+    assert order.tax == expected_tax
+    assert order.total == expected_total
