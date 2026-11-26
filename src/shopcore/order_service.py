@@ -9,6 +9,8 @@ from .pricing import (
 )
 
 
+from .catalog import ProductCatalog
+
 class OrderService:
     def __init__(self, inventory: InventoryManager):
         self.inventory = inventory
@@ -105,3 +107,33 @@ class OrderService:
             order.total for order in self._orders.values() if getattr(order, "status", None) != "cancelled"
         )
         return round(revenue, 2)
+
+    def create_order_from_catalog(
+        self, sku_quantities: dict[str, int], catalog: ProductCatalog, coupon_code: str | None = None
+    ) -> Order:
+        if not sku_quantities:
+            raise ValueError("Cannot create an order with an empty cart")
+
+        items: list[CartItem] = []
+        for sku, quantity in sku_quantities.items():
+            product = catalog.get_product(sku)
+            if product is None:
+                raise KeyError(f"SKU '{sku}' not found in catalog")
+            items.append(CartItem(product, quantity))
+
+        return self.create_order(items, coupon_code=coupon_code)
+
+    def get_top_selling_skus(self, limit: int = 3) -> list[tuple[str, int]]:
+        if limit <= 0:
+            raise ValueError("Limit must be positive")
+
+        totals: dict[str, int] = {}
+        for order in self._orders.values():
+            if getattr(order, "status", None) == "cancelled":
+                continue
+            for item in order.items:
+                sku = item.product.sku
+                totals[sku] = totals.get(sku, 0) + item.quantity
+
+        sorted_skus = sorted(totals.items(), key=lambda x: (-x[1], x[0]))
+        return sorted_skus[:limit]

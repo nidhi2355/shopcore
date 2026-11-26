@@ -13,8 +13,9 @@ class ProductCatalog:
     listing utilities with optional price sorting.
     """
 
-    def __init__(self) -> None:
-        self._products: dict[str, Product] = {}
+    def __init__(self, initial_products: dict[str, Product] | None = None) -> None:
+        """Initialize the catalog, optionally with a pre‑populated mapping of SKU to Product."""
+        self._products: dict[str, Product] = dict(initial_products) if initial_products is not None else {}
 
     def register_product(self, product: Product) -> None:
         """Register a new product.
