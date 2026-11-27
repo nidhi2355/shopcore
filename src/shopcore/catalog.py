@@ -65,3 +65,30 @@ class ProductCatalog:
         if sort_by_price:
             return sorted(products, key=lambda p: (p.price, p.sku))
         return sorted(products, key=lambda p: p.sku)
+
+    def update_price(self, sku: str, new_price: float) -> Product:
+        """Update the price of a product identified by *sku*.
+
+        Raises:
+            ValueError: If ``new_price`` is negative.
+            KeyError: If the SKU is not found in the catalog.
+        """
+        if new_price < 0:
+            raise ValueError("Price cannot be negative")
+        try:
+            product = self._products[sku]
+        except KeyError:
+            raise KeyError(f"Product with SKU '{sku}' not found")
+        product.price = round(new_price, 2)
+        return product
+
+    def remove_product(self, sku: str) -> Product:
+        """Remove a product from the catalog by *sku* and return it.
+
+        Raises:
+            KeyError: If the SKU is not found in the catalog.
+        """
+        try:
+            return self._products.pop(sku)
+        except KeyError:
+            raise KeyError(f"Product with SKU '{sku}' not found")

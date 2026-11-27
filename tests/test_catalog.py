@@ -63,3 +63,44 @@ def test_list_products_default_and_price_sort():
     # Sorting by price then SKU
     price_sorted = catalog.list_products(sort_by_price=True)
     assert [p.sku for p in price_sorted] == ["D1", "D3", "D2"]
+
+
+def test_update_price_success():
+    catalog = ProductCatalog()
+    product = _make_product("SKU10", "Gizmo", 10.123)
+    catalog.register_product(product)
+    updated = catalog.update_price("SKU10", 15.567)
+    assert updated.price == round(15.567, 2)
+    # Ensure the catalog reflects the updated price
+    assert catalog.get_product("SKU10").price == round(15.567, 2)
+
+
+def test_update_price_negative_raises():
+    catalog = ProductCatalog()
+    product = _make_product("SKU11", "Widget", 20.0)
+    catalog.register_product(product)
+    with pytest.raises(ValueError):
+        catalog.update_price("SKU11", -5.0)
+    # Price should remain unchanged
+    assert catalog.get_product("SKU11").price == 20.0
+
+
+def test_update_price_unknown_sku_raises():
+    catalog = ProductCatalog()
+    with pytest.raises(KeyError):
+        catalog.update_price("UNKNOWN", 10.0)
+
+
+def test_remove_product_success():
+    catalog = ProductCatalog()
+    product = _make_product("SKU12", "Gadget", 30.0)
+    catalog.register_product(product)
+    removed = catalog.remove_product("SKU12")
+    assert removed is product
+    assert catalog.get_product("SKU12") is None
+
+
+def test_remove_product_unknown_sku_raises():
+    catalog = ProductCatalog()
+    with pytest.raises(KeyError):
+        catalog.remove_product("NONEXISTENT")
